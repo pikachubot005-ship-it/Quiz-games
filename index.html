@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis AI dan Teknologi</title>
+    <!-- Memuat Tailwind CSS untuk styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Memuat pustaka Tone.js untuk efek suara ringan -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #ccfbf1 100%); /* Latar belakang gradient biru-hijau muda */
+            height: 100vh;
+            overflow: hidden; /* Menghilangkan scroll pada layar (body) */
+        }
+        
+        /* Gaya untuk opsi jawaban */
+        .option-btn {
+            transition: all 0.2s ease-in-out;
+            transform: scale(1);
+        }
+        .option-btn:hover:not(:disabled) {
+            transform: scale(1.02) translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-color: #0d9488; /* teal-600 */
+        }
+        .option-btn:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        /* Status Jawaban */
+        .correct-answer {
+            background-color: #10b981 !important; /* Hijau */
+            color: white !important;
+            border-color: #059669 !important;
+        }
+        .wrong-answer {
+            background-color: #ef4444 !important; /* Merah */
+            color: white !important;
+            border-color: #dc2626 !important;
+        }
+
+        /* Animasi */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-up {
+            animation: slideUp 0.4s ease-out forwards;
+        }
+
+        @keyframes pulse-red {
+            0% { transform: scale(1); color: #4b5563; }
+            50% { transform: scale(1.1); color: #ef4444; }
+            100% { transform: scale(1); color: #4b5563; }
+        }
+        .timer-warning {
+            animation: pulse-red 1s infinite;
+            color: #ef4444 !important;
+            font-weight: bold;
+        }
+        
+        /* Konfigurasi tema warna khusus Tailwind */
+        .theme-bg { background-color: #0f766e; } /* teal-700 */
+        .theme-text { color: #0f766e; }
+        .theme-border { border-color: #14b8a6; } /* teal-500 */
+    </style>
+</head>
+
+<body class="h-screen w-screen overflow-hidden flex flex-col items-center justify-center p-2 sm:p-4">
+
+    <!-- Container Utama -->
+    <div class="w-full max-w-3xl h-full max-h-[95vh] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+        
+        <!-- Header Top Bar -->
+        <div class="theme-bg text-white p-4 sm:p-6 text-center relative flex-shrink-0">
+            <h1 class="text-xl sm:text-3xl font-bold tracking-tight">Kuis AI & Teknologi</h1>
+            <p class="text-teal-100 mt-1 sm:text-base opacity-90 text-sm">Uji pengetahuanmu, berpacu dengan waktu!</p>
+            
+            <!-- Elemen Timer (Disembunyikan di awal) -->
+            <div id="timer-container" class="hidden absolute top-3 sm:top-4 right-3 sm:right-4 bg-white text-teal-800 rounded-full px-3 py-1.5 sm:px-4 sm:py-2 font-bold shadow-md flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                </svg>
+                <span id="time-left">15</span>s
+            </div>
+        </div>
+
+        <!-- Progress Bar Bawah Header -->
+        <div class="w-full bg-gray-100 h-2 flex-shrink-0">
+            <div id="progress-bar" class="theme-bg h-full transition-all duration-300 ease-out" style="width: 0%"></div>
+        </div>
+
+        <!-- Konten Area Dinamis -->
+        <div class="flex-grow p-4 sm:p-6 flex flex-col relative overflow-y-auto">
+            
+            <!-- Tampilan Awal (Start Screen) -->
+            <div id="start-screen" class="flex flex-col items-center text-center animate-slide-up m-auto">
+                <div class="w-20 h-20 bg-teal-100 rounded-full flex items-center justify-center mb-4 flex-shrink-0">
+                    <svg class="w-10 h-10 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                </div>
+                <h2 class="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Siap Menghadapi Tantangan?</h2>
+                <p class="text-gray-500 mb-6 max-w-md text-sm sm:text-base">Kuis ini terdiri dari 15 pertanyaan. Anda memiliki waktu <strong>15 detik</strong> untuk menjawab setiap pertanyaan. Pastikan suara perangkat Anda menyala!</p>
+                <button id="start-btn" class="theme-bg hover:bg-teal-800 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform transform hover:-translate-y-1 text-base sm:text-lg">
+                    Mulai Sekarang
+                </button>
+            </div>
+
+            <!-- Tampilan Kuis (Quiz Screen) -->
+            <div id="quiz-screen" class="hidden flex-col w-full h-full">
+                <!-- Info Status -->
+                <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-100 flex-shrink-0">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-teal-50 text-teal-700 px-3 py-1 rounded-lg text-sm font-semibold border theme-border">
+                            Soal <span id="current-q-num">1</span>/15
+                        </span>
+                    </div>
+                    <div class="text-gray-600 font-medium">
+                        Skor: <span id="score-display" class="font-bold text-xl theme-text">0</span>
+                    </div>
+                </div>
+                
+                <!-- Teks Pertanyaan -->
+                <h3 id="question-text" class="text-lg sm:text-2xl font-bold text-gray-800 mb-4 leading-tight flex-shrink-0"></h3>
+                
+                <!-- Kontainer Opsi Jawaban -->
+                <div id="options-container" class="flex flex-col gap-3 mb-4 overflow-y-visible">
+                    <!-- Tombol di-generate JS -->
+                </div>
+
+                <!-- Kontrol Navigasi (Next) -->
+                <div class="flex justify-end mt-auto pt-2 flex-shrink-0 h-14">
+                    <button id="next-btn" class="hidden bg-gray-800 hover:bg-black text-white font-semibold py-2 px-6 rounded-xl transition-all shadow-md">
+                        Soal Berikutnya ➔
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tampilan Hasil Akhir (Result Screen) -->
+            <div id="result-screen" class="hidden flex-col items-center text-center m-auto">
+                <div id="result-icon" class="mb-4 flex-shrink-0">
+                    <!-- Icon akan diisi JS -->
+                </div>
+                
+                <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-1">Kuis Selesai!</h2>
+                <p class="text-gray-500 mb-6 text-sm sm:text-base">Berikut adalah hasil pencapaian Anda:</p>
+                
+                <!-- Kartu Skor -->
+                <div class="flex justify-center gap-4 mb-6 w-full max-w-md">
+                    <div class="flex-1 bg-white p-4 sm:p-6 rounded-2xl border-2 border-teal-100 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-full h-2 theme-bg"></div>
+                        <p class="text-gray-500 font-medium mb-1 text-xs sm:text-sm">Skor Akhir</p>
+                        <p id="final-score" class="text-4xl sm:text-5xl font-extrabold theme-text">0</p>
+                    </div>
+                    <div class="flex-1 bg-white p-4 sm:p-6 rounded-2xl border-2 border-gray-100 shadow-sm relative overflow-hidden">
+                         <div class="absolute top-0 left-0 w-full h-2 bg-gray-300"></div>
+                        <p class="text-gray-500 font-medium mb-1 text-xs sm:text-sm">Total Soal</p>
+                        <p class="text-4xl sm:text-5xl font-extrabold text-gray-700">15</p>
+                    </div>
+                </div>
+
+                <div id="feedback-box" class="p-3 sm:p-4 rounded-xl mb-6 w-full max-w-md border">
+                    <p id="feedback-msg" class="text-base sm:text-lg font-semibold"></p>
+                </div>
+
+                <button id="restart-btn" class="flex items-center gap-2 theme-bg hover:bg-teal-800 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform transform hover:-translate-y-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+                    </svg>
+                    Coba Lagi
+                </button>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        // Data Soal 
+        const quizData = [
+            {
+                question: "Apa yang dimaksud dengan AI?",
+                options: ["Alat untuk mencetak dokumen", "Kecerdasan buatan yang dapat melakukan tugas tertentu seperti manusia", "Jaringan listrik", "Sistem untuk menyimpan makanan"],
+                answer: 1 
+            },
+            {
+                question: "Contoh penggunaan AI dalam kehidupan sehari-hari adalah...",
+                options: ["Kipas angin manual", "Buku tulis", "Asisten virtual pada ponsel", "Pensil"],
+                answer: 2 
+            },
+            {
+                question: "Kepanjangan dari AI adalah...",
+                options: ["Automatic Internet", "Artificial Intelligence", "Advanced Information", "Application Interface"],
+                answer: 1 
+            },
+            {
+                question: "Teknologi yang digunakan untuk menghubungkan komputer dan perangkat melalui jaringan disebut...",
+                options: ["Internet", "Keyboard", "Printer", "Scanner"],
+                answer: 0 
+            },
+            {
+                question: "Salah satu manfaat teknologi dalam bidang pendidikan adalah...",
+                options: ["Memudahkan mencari informasi dan belajar", "Mengurangi sumber pengetahuan", "Membuat siswa tidak perlu belajar", "Menghilangkan sekolah"],
+                answer: 0 
+            },
+            {
+                question: "Chatbot adalah teknologi yang dapat...",
+                options: ["Mencetak makanan", "Berkomunikasi dengan pengguna melalui percakapan", "Mencuci pakaian", "Mengisi bahan bakar kendaraan"],
+                answer: 1 
+            },
+            {
+                question: "Contoh perangkat teknologi yang digunakan untuk mengambil gambar adalah...",
+                options: ["Kamera", "Speaker", "Keyboard", "Router"],
+                answer: 0 
+            },
+            {
+                question: "AI dapat membantu dokter dengan cara...",
+                options: ["Menggantikan semua dokter", "Membantu menganalisis data dan gambar medis", "Membuat alat tanpa pemeriksaan", "Menghilangkan kebutuhan rumah sakit"],
+                answer: 1 
+            },
+            {
+                question: "Data yang digunakan AI untuk belajar disebut...",
+                options: ["Data latihan", "Data kosong", "Data listrik", "Data suara saja"],
+                answer: 0 
+            },
+            {
+                question: "Salah satu dampak positif teknologi komunikasi adalah...",
+                options: ["Mempercepat komunikasi jarak jauh", "Membuat komunikasi semakin sulit", "Memperlambat internet", "Membatasi pertukaran informasi"],
+                answer: 0 
+            },
+            {
+                question: "Teknologi yang memungkinkan komputer mengenali wajah disebut...",
+                options: ["Pengenalan wajah", "Pengeditan data", "Pencetakan 3D", "Penyimpanan gambar"],
+                answer: 0 
+            },
+            {
+                question: "Salah satu hal yang harus diperhatikan ketika menggunakan AI adalah...",
+                options: ["Selalu mempercayai semua jawaban AI", "Memeriksa kebenaran informasi yang diberikan AI", "Memberikan data pribadi kepada siapa saja", "Menggunakan AI tanpa aturan"],
+                answer: 1 
+            },
+            {
+                question: "Contoh teknologi yang dapat membantu navigasi adalah...",
+                options: ["GPS", "Kalkulator", "Printer", "Mikrofon"],
+                answer: 0 
+            },
+            {
+                question: "Mengapa kita harus menggunakan teknologi secara bijak?",
+                options: ["Agar teknologi memberikan manfaat dan tidak disalahgunakan", "Agar tidak bisa belajar", "Agar internet menjadi lebih lambat", "Agar perangkat cepat rusak"],
+                answer: 0 
+            },
+            {
+                question: "Manakah yang merupakan contoh kecerdasan buatan?",
+                options: ["Sistem rekomendasi video berdasarkan kebiasaan pengguna", "Penggaris", "Meja belajar", "Buku cetak"],
+                answer: 0 
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let hasAnswered = false;
+        
+        // Timer settings
+        const TIME_LIMIT = 15;
+        let timeLeft = TIME_LIMIT;
+        let timerInterval;
+
+        // Sound Setup menggunakan Tone.js
+        let synth;
+        let audioContextStarted = false;
+
+        async function initAudio() {
+            if (!audioContextStarted) {
+                await Tone.start();
+                synth = new Tone.Synth().toDestination();
+                audioContextStarted = true;
+            }
+        }
+
+        function playSound(type) {
+            if (!synth) return;
+            const now = Tone.now();
+            
+            if (type === 'correct') {
+                // Suara nada naik
+                synth.triggerAttackRelease("C5", "8n", now);
+                synth.triggerAttackRelease("E5", "8n", now + 0.1);
+                synth.triggerAttackRelease("G5", "4n", now + 0.2);
+            } else if (type === 'wrong' || type === 'timeout') {
+                // Suara nada rendah / error
+                synth.triggerAttackRelease("D4", "8n", now);
+                synth.triggerAttackRelease("A3", "4n", now + 0.15);
+            } else if (type === 'tick') {
+                // Suara detik (opsional)
+                const pingSynth = new Tone.MembraneSynth().toDestination();
+                pingSynth.volume.value = -20; // Pelan
+                pingSynth.triggerAttackRelease("C3", "32n");
+            } else if (type === 'finish') {
+                // Fanfare selesai
+                synth.triggerAttackRelease("C4", "8n", now);
+                synth.triggerAttackRelease("E4", "8n", now + 0.15);
+                synth.triggerAttackRelease("G4", "8n", now + 0.3);
+                synth.triggerAttackRelease("C5", "2n", now + 0.45);
+            }
+        }
+
+        const UI = {
+            startScreen: document.getElementById('start-screen'),
+            quizScreen: document.getElementById('quiz-screen'),
+            resultScreen: document.getElementById('result-screen'),
+            startBtn: document.getElementById('start-btn'),
+            nextBtn: document.getElementById('next-btn'),
+            restartBtn: document.getElementById('restart-btn'),
+            questionText: document.getElementById('question-text'),
+            optionsContainer: document.getElementById('options-container'),
+            currentQNum: document.getElementById('current-q-num'),
+            scoreDisplay: document.getElementById('score-display'),
+            progressBar: document.getElementById('progress-bar'),
+            timerContainer: document.getElementById('timer-container'),
+            timeLeftDisplay: document.getElementById('time-left'),
+            finalScore: document.getElementById('final-score'),
+            feedbackMsg: document.getElementById('feedback-msg'),
+            feedbackBox: document.getElementById('feedback-box'),
+            resultIcon: document.getElementById('result-icon')
+        };
+
+        // Event Listeners
+        UI.startBtn.addEventListener('click', () => {
+            initAudio().then(() => {
+                startQuiz();
+            });
+        });
+
+        UI.nextBtn.addEventListener('click', () => {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        });
+
+        UI.restartBtn.addEventListener('click', startQuiz);
+
+        function startQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            updateScore();
+            
+            // Atur tampilan layar
+            UI.startScreen.classList.add('hidden');
+            UI.resultScreen.classList.add('hidden');
+            UI.resultScreen.classList.remove('flex');
+            
+            UI.quizScreen.classList.remove('hidden');
+            UI.quizScreen.classList.add('flex');
+            
+            UI.timerContainer.classList.remove('hidden');
+            
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            hasAnswered = false;
+            UI.nextBtn.classList.add('hidden');
+            
+            const currentQ = quizData[currentQuestionIndex];
+            UI.questionText.textContent = currentQ.question;
+            UI.currentQNum.textContent = currentQuestionIndex + 1;
+            
+            // Animasi transisi konten
+            UI.questionText.classList.remove('animate-slide-up');
+            void UI.questionText.offsetWidth; // trigger reflow
+            UI.questionText.classList.add('animate-slide-up');
+            
+            // Progress Bar
+            const progress = ((currentQuestionIndex) / quizData.length) * 100;
+            UI.progressBar.style.width = `${progress}%`;
+            
+            // Render Opsi Jawaban
+            UI.optionsContainer.innerHTML = '';
+            const labels = ['A', 'B', 'C', 'D'];
+
+            currentQ.options.forEach((option, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn w-full text-left p-3 sm:p-4 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-700 flex items-center gap-3 sm:gap-4 animate-slide-up';
+                btn.style.animationDelay = `${index * 0.1}s`; // Efek muncul bergiliran
+                
+                // Label A/B/C/D
+                const label = document.createElement('span');
+                label.className = 'flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg bg-gray-100 text-gray-500 font-bold text-sm sm:text-lg';
+                label.textContent = labels[index];
+                
+                // Teks Jawaban
+                const text = document.createElement('span');
+                text.className = 'flex-grow text-sm sm:text-base md:text-lg';
+                text.textContent = option;
+                
+                //
